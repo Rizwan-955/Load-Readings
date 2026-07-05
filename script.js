@@ -1,5 +1,6 @@
 import { database } from "./firebase-config.js";
-
+let lastTimestamp = 0;
+let offlineTimer;
 import {
     ref,
     onValue
@@ -10,7 +11,7 @@ const liveRef = ref(database, "HydroUnit");
 onValue(liveRef, (snapshot) => {
 
     const data = snapshot.val();
-
+const timestamp = Number(data.Timestamp || 0);
     if (!data)
         return;
 
@@ -31,5 +32,37 @@ onValue(liveRef, (snapshot) => {
 
     document.getElementById("lastUpdate").innerHTML =
         new Date().toLocaleTimeString();
+clearTimeout(offlineTimer);
 
-});
+lastTimestamp = timestamp;
+
+document.getElementById("status").innerHTML =
+"🟢 ONLINE";
+
+document.getElementById("status").style.color =
+"green";
+
+document.getElementById("lastUpdate").innerHTML =
+new Date().toLocaleTimeString();
+
+offlineTimer = setTimeout(function(){
+
+document.getElementById("status").innerHTML =
+"🔴 OFFLINE";
+
+document.getElementById("status").style.color =
+"red";
+
+document.getElementById("voltage").innerHTML =
+"0.00 V";
+
+document.getElementById("current").innerHTML =
+"0.00 A";
+
+document.getElementById("power").innerHTML =
+"0.00 W";
+
+document.getElementById("energy").innerHTML =
+"0.000 Wh";
+
+},5000);
