@@ -77,6 +77,7 @@ document.getElementById("historyBtn");
 
 const historySection =
 document.getElementById("historySection");
+historySection.style.display = "none";
 
 let opened = false;
 
