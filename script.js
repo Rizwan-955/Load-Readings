@@ -1,5 +1,8 @@
 import { database } from "./firebase-config.js";
 
+let lastTimestamp = 0;
+let offlineTimer;
+
 import {
     ref,
     onValue
@@ -7,9 +10,6 @@ import {
 
 const liveRef = ref(database, "HydroUnit");
 
-let offlineTimer = null;
-
-// Listen for live Firebase updates
 onValue(liveRef, (snapshot) => {
 
     const data = snapshot.val();
@@ -17,9 +17,7 @@ onValue(liveRef, (snapshot) => {
     if (!data)
         return;
 
-    // -----------------------------
-    // Update Live Values
-    // -----------------------------
+    const timestamp = Number(data.Timestamp || 0);
 
     document.getElementById("voltage").innerHTML =
         Number(data.Voltage || 0).toFixed(2) + " V";
@@ -33,9 +31,9 @@ onValue(liveRef, (snapshot) => {
     document.getElementById("energy").innerHTML =
         Number(data.Energy || 0).toFixed(3) + " Wh";
 
-    // -----------------------------
-    // Device is ONLINE
-    // -----------------------------
+    clearTimeout(offlineTimer);
+
+    lastTimestamp = timestamp;
 
     document.getElementById("status").innerHTML =
         "🟢 ONLINE";
@@ -46,13 +44,7 @@ onValue(liveRef, (snapshot) => {
     document.getElementById("lastUpdate").innerHTML =
         new Date().toLocaleTimeString();
 
-    // -----------------------------
-    // Restart Offline Timer
-    // -----------------------------
-
-    clearTimeout(offlineTimer);
-
-    offlineTimer = setTimeout(() => {
+    offlineTimer = setTimeout(function(){
 
         document.getElementById("status").innerHTML =
             "🔴 OFFLINE";
@@ -72,9 +64,6 @@ onValue(liveRef, (snapshot) => {
         document.getElementById("energy").innerHTML =
             "0.000 Wh";
 
-        document.getElementById("lastUpdate").innerHTML =
-            "--";
-
-    }, 5000);
+    },5000);
 
 });
