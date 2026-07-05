@@ -1,6 +1,5 @@
 import { database } from "./firebase-config.js";
-let lastTimestamp = 0;
-let offlineTimer;
+
 import {
     ref,
     onValue
@@ -8,58 +7,85 @@ import {
 
 const liveRef = ref(database, "HydroUnit");
 
+// Time when the last NEW data arrived
+let lastReceiveTime = Date.now();
+
+// Last timestamp received from ESP32
+let lastTimestamp = -1;
+
+// Listen for Firebase updates
 onValue(liveRef, (snapshot) => {
 
-   const data = snapshot.val();
+    const data = snapshot.val();
 
-if (!data)
-    return;
+    if (!data)
+        return;
 
-const timestamp = Number(data.Timestamp || 0);
+    const timestamp = Number(data.Timestamp || 0);
 
-    document.getElementById("voltage").innerHTML =
-        Number(data.Voltage || 0).toFixed(2) + " V";
+    // Update only if ESP32 uploaded NEW data
+    if (timestamp !== lastTimestamp)
+    {
 
-    document.getElementById("current").innerHTML =
-        Number(data.Current || 0).toFixed(2) + " A";
+        lastTimestamp = timestamp;
+        lastReceiveTime = Date.now();
 
-    document.getElementById("power").innerHTML =
-        Number(data.Power || 0).toFixed(2) + " W";
+        // Update Values
+        document.getElementById("voltage").innerHTML =
+            Number(data.Voltage || 0).toFixed(2) + " V";
 
-    document.getElementById("energy").innerHTML =
-        Number(data.Energy || 0).toFixed(3) + " Wh";
+        document.getElementById("current").innerHTML =
+            Number(data.Current || 0).toFixed(2) + " A";
 
-clearTimeout(offlineTimer);
+        document.getElementById("power").innerHTML =
+            Number(data.Power || 0).toFixed(2) + " W";
 
-lastTimestamp = timestamp;
+        document.getElementById("energy").innerHTML =
+            Number(data.Energy || 0).toFixed(3) + " Wh";
 
-document.getElementById("status").innerHTML =
-"🟢 ONLINE";
+        // ONLINE
+        document.getElementById("status").innerHTML =
+            "🟢 ONLINE";
 
-document.getElementById("status").style.color =
-"green";
+        document.getElementById("status").style.color =
+            "green";
 
-document.getElementById("lastUpdate").innerHTML =
-new Date().toLocaleTimeString();
+        // Last Update
+        document.getElementById("lastUpdate").innerHTML =
+            new Date().toLocaleTimeString();
 
-offlineTimer = setTimeout(function(){
+    }
 
-document.getElementById("status").innerHTML =
-"🔴 OFFLINE";
+});
 
-document.getElementById("status").style.color =
-"red";
+// Check every second whether ESP32 stopped uploading
 
-document.getElementById("voltage").innerHTML =
-"0.00 V";
+setInterval(function(){
 
-document.getElementById("current").innerHTML =
-"0.00 A";
+    if(Date.now() - lastReceiveTime > 5000)
+    {
 
-document.getElementById("power").innerHTML =
-"0.00 W";
+        document.getElementById("status").innerHTML =
+            "🔴 OFFLINE";
 
-document.getElementById("energy").innerHTML =
-"0.000 Wh";
+        document.getElementById("status").style.color =
+            "red";
 
-},5000);
+        document.getElementById("voltage").innerHTML =
+            "0.00 V";
+
+        document.getElementById("current").innerHTML =
+            "0.00 A";
+
+        document.getElementById("power").innerHTML =
+            "0.00 W";
+
+        document.getElementById("energy").innerHTML =
+            "0.000 Wh";
+
+        document.getElementById("lastUpdate").innerHTML =
+            "--";
+
+    }
+
+},1000);
